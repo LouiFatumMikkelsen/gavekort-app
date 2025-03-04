@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Animated, Alert, Image } from 'react-native';
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter, Link } from 'expo-router';
 import { useState } from 'react';
@@ -12,6 +12,7 @@ interface GiftCard {
   amount: string;
   expiryDate: Date;
   cardNumber: string;
+  logoUrl?: string;
 }
 
 // Tilføj en funktion til at generere forskellige farver baseret på butiksnavn
@@ -123,6 +124,13 @@ export default function MineKortScreen() {
                 onPress={() => router.push(`/card/${card.id}`)}
               >
                 <View style={styles.cardTop}>
+                  {card.logoUrl && (
+                    <Image 
+                      source={{ uri: card.logoUrl }} 
+                      style={styles.storeLogo}
+                      resizeMode="contain"
+                    />
+                  )}
                   <Text style={styles.storeName} numberOfLines={1}>
                     {card.store}
                   </Text>
@@ -239,6 +247,8 @@ const styles = StyleSheet.create({
   cardTop: {
     flex: 1,
     padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardShine: {
     position: 'absolute',
@@ -249,10 +259,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     transform: [{ skewY: '-10deg' }],
   },
+  storeLogo: {
+    width: '60%',
+    height: 40,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 8,
+    padding: 4,
+  },
   storeName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+    textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,

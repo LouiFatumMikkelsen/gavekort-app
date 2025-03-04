@@ -1,9 +1,49 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform, Alert, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getStoreLogo } from '../lib/stores';
+
+// Liste over butikker
+const stores = [
+  {
+    id: '1',
+    name: 'H&M',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/H%26M-Logo.svg/2560px-H%26M-Logo.svg.png'
+  },
+  {
+    id: '2',
+    name: 'Matas',
+    logoUrl: 'https://matas.dk/images/logo.svg'
+  },
+  {
+    id: '3',
+    name: 'Magasin',
+    logoUrl: 'https://www.magasin.dk/on/demandware.static/Sites-MagasinDK-Site/-/default/dw4e685572/images/logo.svg'
+  },
+  {
+    id: '4',
+    name: 'Føtex',
+    logoUrl: 'https://www.foetex.dk/img/foetex-logo.png'
+  },
+  {
+    id: '5',
+    name: 'Bilka',
+    logoUrl: 'https://www.bilka.dk/img/bilka-logo.png'
+  },
+  {
+    id: '6',
+    name: 'Normal',
+    logoUrl: 'https://normal.dk/images/logo.png'
+  },
+  {
+    id: '7',
+    name: 'Imerco',
+    logoUrl: 'https://www.imerco.dk/images/logo.svg'
+  }
+];
 
 export default function ManualEntryScreen() {
   const router = useRouter();
@@ -13,33 +53,55 @@ export default function ManualEntryScreen() {
     expiryDate: new Date(),
     cardNumber: '',
   });
+  const [suggestions, setSuggestions] = useState([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Søgefunktion
+  const handleSearch = (text) => {
+    console.log('Søger efter:', text);
+    setFormData(prev => ({ ...prev, store: text }));
+    
+    if (text.length > 0) {
+      const filtered = stores.filter(store => 
+        store.name.toLowerCase().includes(text.toLowerCase())
+      );
+      console.log('Fandt butikker:', filtered);
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  // Vælg butik fra forslag
+  const handleStoreSelect = (store) => {
+    setFormData(prev => ({ ...prev, store: store.name }));
+    setSuggestions([]);
+  };
 
   const handleSubmit = async () => {
     try {
-      // Validér input
       if (!formData.store || !formData.amount || !formData.cardNumber) {
         Alert.alert('Fejl', 'Udfyld venligst alle felter');
         return;
       }
 
+      // Hent det bedste tilgængelige logo
+      const logoUrl = await getStoreLogo(formData.store);
+      
       const newCard = {
         id: Date.now().toString(),
         store: formData.store,
         amount: formData.amount,
-        expiryDate: formData.expiryDate.toISOString(), // Konverter til string
-        cardNumber: formData.cardNumber
+        expiryDate: formData.expiryDate.toISOString(),
+        cardNumber: formData.cardNumber,
+        logoUrl: logoUrl
       };
 
-      // Hent eksisterende kort
       const savedCards = await AsyncStorage.getItem('giftCards');
       const existingCards = savedCards ? JSON.parse(savedCards) : [];
       
       const updatedCards = [...existingCards, newCard];
       await AsyncStorage.setItem('giftCards', JSON.stringify(updatedCards));
-      
-      console.log('Kort gemt:', newCard);
-      console.log('Alle kort:', updatedCards);
       
       Alert.alert('Success', 'Gavekortet er gemt', [
         { text: 'OK', onPress: () => router.back() }
@@ -71,12 +133,27 @@ export default function ManualEntryScreen() {
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Butik</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.store}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, store: text }))}
-            placeholder="Indtast butikkens navn"
-          />
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.input}
+              value={formData.store}
+              onChangeText={handleSearch}
+              placeholder="Søg efter butik..."
+            />
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((store) => (
+                  <TouchableOpacity
+                    key={store.id}
+                    style={styles.suggestionItem}
+                    onPress={() => handleStoreSelect(store)}
+                  >
+                    <Text style={styles.suggestionText}>{store.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.inputGroup}>
@@ -185,5 +262,35 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  searchContainer: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginTop: 4,
+    maxHeight: 200,
+    zIndex: 1000,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  suggestionText: {
+    fontSize: 16,
   },
 }); 
