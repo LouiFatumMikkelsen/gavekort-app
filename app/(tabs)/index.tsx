@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCardColor } from '../lib/stores';
 
 interface GiftCard {
   id: string;
@@ -13,22 +14,9 @@ interface GiftCard {
   expiryDate: Date;
   cardNumber: string;
   logoUrl?: string;
+  type: string;
+  value: { text: string; color: string };
 }
-
-// Tilføj en funktion til at generere forskellige farver baseret på butiksnavn
-const getCardColor = (storeName: string) => {
-  const colors = [
-    '#1e3a8a', // Mørkeblå
-    '#047857', // Mørkegrøn
-    '#7c3aed', // Lilla
-    '#b91c1c', // Mørkerød
-    '#0369a1', // Ocean blå
-  ];
-  
-  // Brug butiksnavn til at vælge en farve
-  const index = storeName.length % colors.length;
-  return colors[index];
-};
 
 export default function MineKortScreen() {
   const router = useRouter();
@@ -124,16 +112,17 @@ export default function MineKortScreen() {
                 onPress={() => router.push(`/card/${card.id}`)}
               >
                 <View style={styles.cardTop}>
-                  {card.logoUrl && (
+                  {card.type === 'logo' && card.value ? (
                     <Image 
-                      source={{ uri: card.logoUrl }} 
+                      source={{ uri: card.value }}
                       style={styles.storeLogo}
                       resizeMode="contain"
                     />
+                  ) : (
+                    <Text style={[styles.storeText, { fontSize: 24, fontWeight: 'bold', color: '#fff' }]}>
+                      {card.store}
+                    </Text>
                   )}
-                  <Text style={styles.storeName} numberOfLines={1}>
-                    {card.store}
-                  </Text>
                 </View>
                 <View style={styles.cardBottom}>
                   <View style={styles.cardInfo}>
@@ -267,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 4,
   },
-  storeName: {
+  storeText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',

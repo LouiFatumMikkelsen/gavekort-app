@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getStoreLogo } from '../lib/stores';
+import { getStoreLogo, getStoreDisplay } from '../lib/stores';
 
 // Liste over butikker
 const stores = [
@@ -74,7 +74,9 @@ export default function ManualEntryScreen() {
 
   // Vælg butik fra forslag
   const handleStoreSelect = (store) => {
-    setFormData(prev => ({ ...prev, store: store.name }));
+    // Brug displayName hvis det findes, ellers brug name
+    const storeName = store.displayName || store.name;
+    setFormData(prev => ({ ...prev, store: storeName }));
     setSuggestions([]);
   };
 
@@ -85,8 +87,8 @@ export default function ManualEntryScreen() {
         return;
       }
 
-      // Hent det bedste tilgængelige logo
-      const logoUrl = await getStoreLogo(formData.store);
+      // Hent butikkens display information
+      const storeDisplay = getStoreDisplay(formData.store);
       
       const newCard = {
         id: Date.now().toString(),
@@ -94,7 +96,8 @@ export default function ManualEntryScreen() {
         amount: formData.amount,
         expiryDate: formData.expiryDate.toISOString(),
         cardNumber: formData.cardNumber,
-        logoUrl: logoUrl
+        type: storeDisplay.type,
+        value: storeDisplay.value
       };
 
       const savedCards = await AsyncStorage.getItem('giftCards');
