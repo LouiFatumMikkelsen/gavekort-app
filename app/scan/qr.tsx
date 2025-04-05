@@ -1,86 +1,145 @@
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { MaterialIcons } from "@expo/vector-icons";
+import { Camera } from 'expo-camera';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const QRScreen = () => {
+export default function QRScreen() {
   const router = useRouter();
-  const [hasPermission, setHasPermission] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [scanned, setScanned] = useState(false);
 
-  const requestPermission = () => {
+  useEffect(() => {
+    const getCameraPermissions = async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    };
+
+    getCameraPermissions();
+  }, []);
+
+  const handleBarCodeScanned = ({ data }) => {
+    setScanned(true);
     Alert.alert(
-      "Kameratilladelse",
-      "Vil du give appen adgang til dit kamera?",
+      "Gavekort Scannet",
+      `Vil du tilføje dette gavekort?\n\nData: ${data}`,
       [
         {
           text: "Nej",
-          onPress: () => router.back(),
-          style: "cancel"
+          style: "cancel",
+          onPress: () => setScanned(false)
         },
         {
           text: "Ja",
-          onPress: () => setHasPermission(true)
+          onPress: () => saveGiftCard(data)
         }
       ]
     );
   };
 
-  if (!hasPermission) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={requestPermission}
-        >
-          <Text style={styles.buttonText}>Start Scanner</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const saveGiftCard = async (cardData: string) => {
+    try {
+      const [store, amount] = cardData.split(':');
+      const existingCards = await AsyncStorage.getItem('giftCards');
+      const cards = existingCards ? JSON.parse(existingCards) : [];
+      
+      const newCard = {
+        id: Date.now().toString(),
+        store: store || 'Ukendt butik',
+        amount: amount || '0',
+        dateAdded: new Date().toISOString(),
+      };
+      
+      cards.push(newCard);
+      await AsyncStorage.setItem('giftCards', JSON.stringify(cards));
+      
+      Alert.alert(
+        "Success",
+        "Gavekortet er blevet tilføjet!",
+        [{ text: "OK", onPress: () => router.push("/(tabs)") }]
+      );
+    } catch (error) {
+      Alert.alert("Fejl", "Kunne ikke gemme gavekortet");
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => router.back()}
+      <Camera
+        style={StyleSheet.absoluteFillObject}
+        type="back"
+        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
-        <MaterialIcons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
-      <Text style={styles.text}>Scanner aktiveret!</Text>
+        <View style={styles.overlay}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.scanArea}>
+            <Text style={styles.scanText}>Placér QR-koden i midten</Text>
+          </View>
+        </View>
+      </Camera>
+      {scanned && (
+        <TouchableOpacity 
+          style={styles.scanAgainButton}
+          onPress={() => setScanned(false)}
+        >
+          <Text style={styles.buttonText}>Scan igen</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    padding: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 44,
+  },
+  scanArea: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 16,
-    zIndex: 1,
-  },
-  text: {
+  scanText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    margin: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 16,
+    borderRadius: 8,
   },
-  button: {
+  scanAgainButton: {
+    position: 'absolute',
+    bottom: 32,
+    left: 16,
+    right: 16,
     backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
-    margin: 20,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: '600',
   },
 });
-
-export default QRScreen; 

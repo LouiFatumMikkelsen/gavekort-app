@@ -77,67 +77,58 @@ export default function MineKortScreen() {
     );
   };
 
+  const showAddOptions = () => {
+    Alert.alert(
+      "Tilføj gavekort",
+      "Vælg hvordan du vil tilføje dit gavekort",
+      [
+        {
+          text: "Scan QR-kode",
+          onPress: () => router.push("/scan/qr")
+        },
+        {
+          text: "Indtast manuelt",
+          onPress: () => router.push("/scan/manual")
+        },
+        {
+          text: "Annuller",
+          style: "cancel"
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.headerText}>Mine Gavekort</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.addButton} onPress={() => router.push("/scan/manual")}>
-            <Ionicons name="add-circle" size={24} color="#007AFF" />
-            <Text style={styles.addButtonText}>Tilføj manuelt</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.scanButton} onPress={() => router.push("/scan/qr")}>
-            <Ionicons name="scan" size={24} color="#fff" />
-            <Text style={styles.scanButtonText}>Scan kort</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.headerText}>Kort</Text>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={showAddOptions}
+        >
+          <Ionicons name="add" size={24} color="#000" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.cardList} contentContainerStyle={styles.scrollContent}>
-        {giftCards.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="card-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyTitle}>Ingen gavekort endnu</Text>
-            <Text style={styles.emptyText}>
-              Tilføj dit første gavekort ved at scanne{'\n'}eller indtaste det manuelt
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.cardGrid}>
-            {giftCards.map((card) => (
-              <TouchableOpacity 
-                key={card.id} 
-                style={[styles.card, { backgroundColor: getCardColor(card.store) }]}
-                onPress={() => router.push(`/card/${card.id}`)}
-              >
-                <View style={styles.cardTop}>
-                  {card.type === 'logo' && card.value ? (
-                    <Image 
-                      source={{ uri: card.value }}
-                      style={styles.storeLogo}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Text style={[styles.storeText, { fontSize: 24, fontWeight: 'bold', color: '#fff' }]}>
-                      {card.store}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.cardBottom}>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.amount}>{card.amount} kr</Text>
-                    <Text style={styles.expiryDate} numberOfLines={1}>
-                      Udløber {new Date(card.expiryDate).toLocaleDateString('da-DK')}
-                    </Text>
-                  </View>
-                  <Text style={styles.cardNumber}>{card.cardNumber}</Text>
-                </View>
-                <View style={styles.cardShine} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+      <ScrollView style={styles.cardList}>
+        <View style={styles.cardGrid}>
+          {giftCards.map((card) => (
+            <TouchableOpacity 
+              key={card.id} 
+              style={styles.card}
+              onPress={() => router.push(`/card/${card.id}`)}
+            >
+              <View style={styles.cardContent}>
+                <Text style={styles.storeName}>{card.store}</Text>
+                <Text style={styles.amount}>{card.amount} kr</Text>
+                <Text style={styles.date}>
+                  {new Date(card.expiryDate).toLocaleDateString('da-DK')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,145 +137,62 @@ export default function MineKortScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#000',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  headerText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
     marginBottom: 16,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 12,
+  headerText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    flex: 1,
-  },
-  addButtonText: {
-    color: '#007AFF',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  scanButton: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    flex: 1,
-  },
-  scanButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
   },
   cardList: {
     flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
+    paddingHorizontal: 16,
   },
   cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    justifyContent: 'space-between',
+    gap: 12,
   },
   card: {
-    width: '47%',
-    borderRadius: 16,
+    width: '48%',
+    backgroundColor: '#0A3D91',
+    borderRadius: 12,
+    marginBottom: 12,
     overflow: 'hidden',
-    height: 160,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
-  cardTop: {
-    flex: 1,
+  cardContent: {
     padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  cardShine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    transform: [{ skewY: '-10deg' }],
-  },
-  storeLogo: {
-    width: '60%',
-    height: 40,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 8,
-    padding: 4,
-  },
-  storeText: {
-    fontSize: 16,
-    fontWeight: '700',
+  storeName: {
     color: '#fff',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  cardBottom: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    padding: 16,
-  },
-  cardInfo: {
-    gap: 4,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   amount: {
-    fontSize: 20,
-    fontWeight: '700',
     color: '#fff',
+    fontSize: 14,
+    marginBottom: 4,
   },
-  expiryDate: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  cardNumber: {
+  date: {
+    color: '#fff',
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    letterSpacing: 1,
-    marginTop: 8,
-  },
+    opacity: 0.7,
+  }
 });
